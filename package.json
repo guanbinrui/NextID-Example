@@ -1,0 +1,28 @@
+{
+  "name": "next-id.test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "dependencies": {
+    "@nextdotid/sdk": "^0.0.0-20220516022748-6bb30e5",
+    "ethereumjs-util": "^7.1.4",
+    "node-fetch": "^2.6.7",
+    "secp256k1": "^4.0.3",
+    "typescript": "^4.7.2",
+    "wallet.ts": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.1",
+    "@types/secp256k1": "^4.0.3",
+    "ts-node": "^10.8.0"
+  }
+}
