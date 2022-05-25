@@ -1,61 +1,43 @@
-import fetch from 'node-fetch'
-import { ProofClient } from "@nextdotid/sdk"
-import { EthereumAddress } from "wallet.ts"
-import { createKeyPiar, sign } from "./keypair"
-
-const PRODUCTION_URL = new URL('https://proof-service.next.id')
+import fetch from "node-fetch";
+import { ProofClient, ProofService } from "@nextdotid/sdk";
+import { EthereumAddress } from "wallet.ts";
+import { createKeyPiar, sign } from "./keypair";
 
 async function main() {
-    const persona = createKeyPiar()
-    const wallet = createKeyPiar()
-    const { address } = EthereumAddress.from(Buffer.from(wallet.publicKey))
+  const persona = createKeyPiar();
+  const wallet = createKeyPiar();
+  const { address } = EthereumAddress.from(Buffer.from(wallet.publicKey));
 
-    console.log('Wallet & Persona')
-    console.log({
-        walletAddress: address,
-        personaPublicKey: `0x${persona.publicKey.toString('hex')}`,
-    })
-    
+  console.log("Wallet & Persona");
+  console.log({
+    walletAddress: address,
+    personaPublicKey: `0x${persona.publicKey.toString("hex")}`,
+  });
+
+  const proofService = new ProofService({
+    platform: "ethereum",
+    identity: address,
+    public_key: `0x${persona.publicKey.toString("hex")}`,
     // @ts-ignore
-    const proofClient = new ProofClient(PRODUCTION_URL, fetch)
+    client: ProofClient.development(fetch),
+  });
 
-    // get payload 
-    const payload = await proofClient.bindProof({
-        action: 'create',
-        identity: address,
-        platform: 'ethereum',
-        public_key: `0x${Buffer.from(persona.publicKey).toString('hex')}`,
-    })
+  const proof = await proofService.createProof({
+    async onExtra(payload) {
+      return {
+        signature: await sign(payload, persona.privateKey),
+        wallet_signature: await sign(payload, wallet.privateKey),
+      };
+    },
+  });
 
-    // create proof
-    const personaSign = await sign(payload.sign_payload, persona.privateKey)
-    const walletSigned = await sign(payload.sign_payload, wallet.privateKey)
+  // verify proof
+  await proof.verify();
 
-    await proofClient.createProofModification<undefined, {
-        wallet_signature: string
-        signature: string
-    }>({
-        action: 'create',
-        identity: address,
-        platform: 'ethereum',
-        public_key: `0x${Buffer.from(persona.publicKey).toString('hex')}`,
-        proof_location: undefined,
-        extra: {
-            signature: personaSign,
-            wallet_signature: walletSigned,
-        },
-        uuid: payload.uuid,
-        created_at: payload.created_at,
-    })
+  // query all bindings
+  const bindings = await proofService.allExistedBinding();
 
-
-    // query all bindings
-    const bindings = await proofClient.queryExistedBinding({
-        platform: 'ethereum',
-        identity: [address],
-    })
-
-    console.log(JSON.stringify(bindings))
+  console.log(JSON.stringify(bindings, null, 2));
 }
 
-main()
+main();
